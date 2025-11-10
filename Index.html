@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABB Financial Analysis Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --abb-blue: #005eb8;
+            --abb-orange: #ff8200;
+            --healthy: #28a745;
+            --adequate: #ffc107;
+            --risk: #dc3545;
+            --light: #f8f9fa;
+            --dark: #343a40;
+            --gray: #6c757d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ed 100%);
+            color: var(--dark);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header & Navigation */
+        header {
+            background: linear-gradient(135deg, var(--abb-blue), #003d7a);
+            color: white;
+            padding: 20px 0;
+            border-radius: 0 0 15px 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+        }
+        
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .logo-section h1 {
+            font-size: 2.2rem;
+            margin-bottom: 5px;
+            font-weight: 700;
+        }
+        
+        .logo-section .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            background: var(--healthy);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
+            margin-top: 10px;
+        }
+        
+        /* Navigation */
+        nav {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            width: 100%;
+        }
+        
+        .nav-links {
+            display: flex;
+            justify-content: center;
+            list-style: none;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .nav-links li {
+            margin: 0;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .nav-links a:hover, .nav-links a.active {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 5px solid var(--abb-blue);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0,0,0,0.12);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--abb-blue), #003d7a);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .card-title {
+            color: var(--abb-blue);
+            font-size: 1.4rem;
+            margin: 0;
+        }
+        
+        .card-description {
+            color: var(--gray);
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+        
+        .card-features {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+        
+        .card-features li {
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card-features li:last-child {
+            border-bottom: none;
+        }
+        
+        .card-features i {
+            color: var(--healthy);
+        }
+        
+        .card-button {
+            display: inline-block;
+            background: var(--abb-blue);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            text-align: center;
+            transition: all 0.3s ease;
+            margin-top: auto;
+        }
+        
+        .card-button:hover {
+            background: #004a94;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,94,184,0.3);
+        }
+        
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 50px;
+            padding: 30px 20px;
+            color: var(--gray);
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .nav-links {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .nav-links a {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <h1>ABB Financial Analysis Hub</h1>
+                    <p class="subtitle">Comprehensive Financial Health Assessment vs. Danfoss & Siemens (2021-2023)</p>
+                    <div class="status-badge">
+                        <i class="fas fa-check-circle"></i> OVERALL STATUS: EXCELLENT HEALTH
+                    </div>
+                </div>
+            </div>
+            
+            <nav>
+                <ul class="nav-links">
+                    <li><a href="#" class="active"><i class="fas fa-home"></i> Home</a></li>
+                    <li><a href="ABB_1.html"><i class="fas fa-shield-alt"></i> Solvency & Liquidity</a></li>
+                    <li><a href="ABB_2.html"><i class="fas fa-chart-line"></i> Financial Dashboard</a></li>
+                    <li><a href="ABB_3.html"><i class="fas fa-chart-pie"></i> Profitability Analysis</a></li>
+                    <li><a href="deepseek_html_20251110_1b31f5 (1).html"><i class="fas fa-tachometer-alt"></i> Growth Analysis</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="dashboard-grid">
+            <!-- Solvency & Liquidity Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h2 class="card-title">Solvency & Liquidity Analysis</h2>
+                </div>
+                <p class="card-description">
+                    Comprehensive assessment of ABB's financial stability, liquidity position, and risk profile compared to competitors Danfoss and Siemens.
+                </p>
+                <ul class="card-features">
+                    <li><i class="fas fa-check"></i> Current Ratio: 1.78 (Industry Avg: 1.50)</li>
+                    <li><i class="fas fa-check"></i> Gearing Ratio: 0.24 (Safe Zone: < 0.50)</li>
+                    <li><i class="fas fa-check"></i> Altman Z-Score: 4.39 (Safe Zone: > 3.0)</li>
+                    <li><i class="fas fa-check"></i> Risk Assessment: Minimal to None</li>
+                </ul>
+                <a href="ABB_1.html" class="card-button">View Full Analysis</a>
+            </div>
+            
+            <!-- Financial Dashboard Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h2 class="card-title">Financial Dashboard</h2>
+                </div>
+                <p class="card-description">
+                    Interactive dashboard with detailed financial metrics, comparative analysis, and strategic recommendations for ABB's financial management.
+                </p>
+                <ul class="card-features">
+                    <li><i class="fas fa-check"></i> Debt-to-Equity: 0.32 (Safe Zone: < 0.60)</li>
+                    <li><i class="fas fa-check"></i> Interest Coverage: 15x+ (Safe Zone: > 3x)</li>
+                    <li><i class="fas fa-check"></i> Credit Rating: A to A+ (Investment Grade)</li>
+                    <li><i class="fas fa-check"></i> Capital Access: Excellent</li>
+                </ul>
+                <a href="ABB_2.html" class="card-button">Explore Dashboard</a>
+            </div>
+            
+            <!-- Profitability Analysis Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-chart-pie"></i>
+                    </div>
+                    <h2 class="card-title">Profitability Deep Dive</h2>
+                </div>
+                <p class="card-description">
+                    ROIC decomposition and competitive benchmarking with five-way profitability analysis including trend and ratio analysis.
+                </p>
+                <ul class="card-features">
+                    <li><i class="fas fa-check"></i> ROIC: 12.4% (Improving trend)</li>
+                    <li><i class="fas fa-check"></i> Net Margin: 8.2% (Strong performance)</li>
+                    <li><i class="fas fa-check"></i> Capital Efficiency: 1.38x turnover</li>
+                    <li><i class="fas fa-check"></i> Competitive benchmarking</li>
+                </ul>
+                <a href="ABB_3.html" class="card-button">View Profitability Analysis</a>
+            </div>
+            
+            <!-- Growth Analysis Card -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <h2 class="card-title">Growth & Strategy Analysis</h2>
+                </div>
+                <p class="card-description">
+                    Comprehensive growth analysis with strategic recommendations based on cost-volume-profit analysis and competitive positioning.
+                </p>
+                <ul class="card-features">
+                    <li><i class="fas fa-check"></i> Revenue Growth: +9.5% in 2023</li>
+                    <li><i class="fas fa-check"></i> ROIC: 52.4% (2023)</li>
+                    <li><i class="fas fa-check"></i> Strategic action recommendations</li>
+                    <li><i class="fas fa-check"></i> Competitive advantage assessment</li>
+                </ul>
+                <a href="deepseek_html_20251110_1b31f5 (1).html" class="card-button">Analyze Growth</a>
+            </div>
+        </div>
+        
+        <!-- Key Insights Section -->
+        <div class="dashboard-card" style="margin-top: 30px;">
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <h2 class="card-title">Key Financial Insights</h2>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 20px;">
+                <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <div style="font-size: 2rem; color: var(--abb-blue); margin-bottom: 10px;">1.78</div>
+                    <div style="font-weight: bold; color: var(--dark);">Current Ratio</div>
+                    <div style="color: var(--gray); font-size: 0.9rem;">Strong liquidity position</div>
+                </div>
+                <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <div style="font-size: 2rem; color: var(--healthy); margin-bottom: 10px;">4.39</div>
+                    <div style="font-weight: bold; color: var(--dark);">Z-Score</div>
+                    <div style="color: var(--gray); font-size: 0.9rem;">Low bankruptcy risk</div>
+                </div>
+                <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <div style="font-size: 2rem; color: var(--abb-orange); margin-bottom: 10px;">52.4%</div>
+                    <div style="font-weight: bold; color: var(--dark);">ROIC</div>
+                    <div style="color: var(--gray); font-size: 0.9rem;">Excellent returns</div>
+                </div>
+                <div style="text-align: center; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <div style="font-size: 2rem; color: var(--abb-blue); margin-bottom: 10px;">€5-10B</div>
+                    <div style="font-weight: bold; color: var(--dark);">Debt Capacity</div>
+                    <div style="color: var(--gray); font-size: 0.9rem;">Strong financial flexibility</div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p><strong>ABB Financial Analysis Hub</strong> | Data Period: 2021-2023 | Analysis Date: 2024</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                This comprehensive analysis demonstrates ABB's strong financial health, profitability, and competitive advantage in the industrial automation sector.
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Simple navigation active state management
+        document.querySelectorAll('.nav-links a').forEach(link => {
+            link.addEventListener('click', function(e) {
+                if (this.getAttribute('href') === '#') {
+                    e.preventDefault();
+                }
+                
+                document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+            });
+        });
+    </script>
+</body>
+</html>

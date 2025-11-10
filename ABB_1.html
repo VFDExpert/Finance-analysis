@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ABB Financial Health Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --abb-blue: #005eb8; --abb-orange: #ff8200; --healthy: #28a745; --adequate: #ffc107; --risk: #dc3545; --light: #f8f9fa; --dark: #343a40; --gray: #6c757d; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ed 100%); color: var(--dark); line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        header { background: linear-gradient(135deg, var(--abb-blue), #003d7a); color: white; padding: 30px 0; text-align: center; border-radius: 0 0 15px 15px; margin-bottom: 30px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); position: relative; overflow: hidden; }
+        header::before { content: ""; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%); }
+        h1 { font-size: 2.8rem; margin-bottom: 10px; font-weight: 700; }
+        .subtitle { font-size: 1.3rem; opacity: 0.9; max-width: 800px; margin: 0 auto; }
+        .status-badge { display: inline-block; background: var(--healthy); color: white; padding: 8px 20px; border-radius: 30px; font-weight: bold; margin-top: 15px; font-size: 1.2rem; box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3); }
+        .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; margin-bottom: 30px; }
+        @media (max-width: 1100px) { .dashboard { grid-template-columns: 1fr; } }
+        .card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); transition: transform 0.3s ease, box-shadow 0.3s ease; border-top: 5px solid var(--abb-blue); }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 12px 20px rgba(0,0,0,0.12); }
+        .card-title { color: var(--abb-blue); font-size: 1.5rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+        .card-title i { font-size: 1.8rem; }
+        .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 25px; }
+        .metric-card { background: var(--light); border-radius: 10px; padding: 20px; text-align: center; border-left: 4px solid var(--abb-blue); transition: all 0.3s ease; }
+        .metric-card:hover { transform: scale(1.03); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .metric-value { font-size: 2.2rem; font-weight: 700; margin: 10px 0; color: var(--abb-blue); }
+        .metric-label { color: var(--gray); font-size: 0.95rem; }
+        .chart-container { height: 300px; margin: 20px 0; position: relative; }
+        .risk-assessment { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-top: 30px; }
+        .risk-card { background: white; border-radius: 15px; padding: 25px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+        .risk-title { font-size: 1.3rem; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        .risk-none { color: var(--healthy); }
+        .risk-minimal { color: var(--adequate); }
+        .risk-high { color: var(--risk); }
+        .recommendations { background: linear-gradient(135deg, #e3f2fd, #f3e5f5); border-radius: 15px; padding: 30px; margin-top: 30px; box-shadow: 0 6px 15px rgba(0,0,0,0.08); }
+        .rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 20px; }
+        .rec-card { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); border-left: 4px solid var(--abb-orange); }
+        .rec-title { font-weight: bold; margin-bottom: 10px; color: var(--abb-blue); display: flex; align-items: center; gap: 10px; }
+        .conclusion { background: linear-gradient(135deg, var(--abb-blue), #003d7a); color: white; padding: 30px; border-radius: 15px; margin-top: 30px; box-shadow: 0 6px 20px rgba(0,0,0,0.15); }
+        .conclusion-title { font-size: 1.8rem; margin-bottom: 20px; text-align: center; }
+        .confidence-level { text-align: center; font-size: 1.5rem; margin: 20px 0; font-weight: bold; }
+        .advantage-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-top: 25px; }
+        .advantage-card { background: rgba(255,255,255,0.15); border-radius: 10px; padding: 20px; text-align: center; backdrop-filter: blur(10px); }
+        .advantage-icon { font-size: 2.5rem; margin-bottom: 15px; }
+        footer { text-align: center; margin-top: 50px; padding: 20px; color: var(--gray); font-size: 0.9rem; }
+        .highlight { background: linear-gradient(120deg, rgba(255,130,0,0.2) 0%, rgba(255,130,0,0) 100%); padding: 3px 6px; border-radius: 4px; font-weight: 600; }
+        .status-cell { font-weight: bold; padding: 8px 15px; border-radius: 20px; }
+        .status-healthy { background-color: rgba(40, 167, 69, 0.15); color: var(--healthy); }
+        .status-adequate { background-color: rgba(255, 193, 7, 0.15); color: var(--adequate); }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>ABB Solvency & Liquidity Analysis</h1>
+            <p class="subtitle">Comprehensive Financial Health Assessment vs. Danfoss & Siemens (2021-2023)</p>
+            <div class="status-badge">
+                <i class="fas fa-check-circle"></i> OVERALL STATUS: EXCELLENT HEALTH
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="dashboard">
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-tachometer-alt"></i> Liquidity Position</h2>
+                <div class="metric-grid">
+                    <div class="metric-card"><div class="metric-label">Current Ratio</div><div class="metric-value">1.78</div><div class="metric-label">Industry Avg: 1.50</div></div>
+                    <div class="metric-card"><div class="metric-label">Quick Ratio</div><div class="metric-value">1.00</div><div class="metric-label">Industry Avg: 0.80</div></div>
+                    <div class="metric-card"><div class="metric-label">Cash Ratio</div><div class="metric-value">0.45</div><div class="metric-label">Industry Avg: 0.30</div></div>
+                </div>
+                <div class="chart-container"><canvas id="liquidityChart"></canvas></div>
+                <p><strong>Interpretation:</strong> ABB can comfortably cover short-term obligations 1.78x over with strong working capital management.</p>
+            </div>
+            <div class="card">
+                <h2 class="card-title"><i class="fas fa-shield-alt"></i> Solvency Position</h2>
+                <div class="metric-grid">
+                    <div class="metric-card"><div class="metric-label">Gearing Ratio</div><div class="metric-value">0.24</div><div class="metric-label">Safe Zone: < 0.50</div></div>
+                    <div class="metric-card"><div class="metric-label">Debt-to-Equity</div><div class="metric-value">0.32</div><div class="metric-label">Safe Zone: < 0.60</div></div>
+                    <div class="metric-card"><div class="metric-label">Interest Coverage</div><div class="metric-value">15x+</div><div class="metric-label">Safe Zone: > 3x</div></div>
+                </div>
+                <div class="chart-container"><canvas id="solvencyChart"></canvas></div>
+                <p><strong>Interpretation:</strong> Low financial leverage with conservative debt usage and no risk of debt service issues.</p>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-chart-line"></i> Financial Stability</h2>
+            <div class="metric-grid">
+                <div class="metric-card"><div class="metric-label">Altman Z-Score</div><div class="metric-value">4.39</div><div class="metric-label">Safe Zone: > 3.0</div></div>
+                <div class="metric-card"><div class="metric-label">Z-Score Trend</div><div class="metric-value">↑ Improving</div><div class="metric-label">2021: 3.8 → 2023: 4.39</div></div>
+            </div>
+            <div class="chart-container"><canvas id="zscoreChart"></canvas></div>
+            <p><strong>Interpretation:</strong> ABB is in the <span class="highlight">"Safe Zone"</span> with low bankruptcy risk.</p>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-university"></i> Capital Access Assessment</h2>
+            <div class="metric-grid">
+                <div class="metric-card"><div class="metric-label">Debt Capacity</div><div class="metric-value">€5-10B</div><div class="metric-label">Without rating impact</div></div>
+                <div class="metric-card"><div class="metric-label">Credit Rating</div><div class="metric-value">A to A+</div><div class="metric-label">Investment Grade</div></div>
+                <div class="metric-card"><div class="metric-label">Operating Cash Flow</div><div class="metric-value">> €3B</div><div class="metric-label">Annual estimate</div></div>
+            </div>
+            <div class="chart-container"><canvas id="capitalChart"></canvas></div>
+            <p><strong>Ability to Raise Capital:</strong> <span class="highlight">EXCELLENT</span></p>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-title"><i class="fas fa-exclamation-triangle"></i> Risk Assessment</h2>
+            <div class="risk-assessment">
+                <div class="risk-card">
+                    <h3 class="risk-title risk-none"><i class="fas fa-check-circle"></i> Liquidity Risks</h3>
+                    <p>More than adequate current assets to cover liabilities.</p>
+                    <div class="status-cell status-healthy" style="display: inline-block; margin-top: 15px;">NONE IDENTIFIED</div>
+                </div>
+                <div class="risk-card">
+                    <h3 class="risk-title risk-minimal"><i class="fas fa-info-circle"></i> Solvency Risks</h3>
+                    <p>Conservative debt levels provide significant buffer.</p>
+                    <div class="status-cell status-adequate" style="display: inline-block; margin-top: 15px;">MINIMAL</div>
+                </div>
+                <div class="risk-card">
+                    <h3 class="risk-title risk-none"><i class="fas fa-check-circle"></i> Comparative Risks</h3>
+                    <p>ABB has the lowest risk in the peer group.</p>
+                    <div class="status-cell status-healthy" style="display: inline-block; margin-top: 15px;">LOWEST RISK</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="recommendations">
+            <h2 class="card-title"><i class="fas fa-lightbulb"></i> Strategic Recommendations</h2>
+            <div class="rec-grid">
+                <div class="rec-card">
+                    <div class="rec-title"><i class="fas fa-check-double"></i> MAINTAIN CURRENT STRATEGY</div>
+                    <ul><li>Continue conservative financial policy</li><li>Preserve strong balance sheet</li><li>Use debt capacity selectively</li></ul>
+                </div>
+                <div class="rec-card">
+                    <div class="rec-title"><i class="fas fa-optimize"></i> OPTIMIZE CAPITAL STRUCTURE</div>
+                    <ul><li>Consider modest leverage increase</li><li>Implement share repurchase program</li><li>Increase dividend payout ratio</li></ul>
+                </div>
+                <div class="rec-card">
+                    <div class="rec-title"><i class="fas fa-rocket"></i> STRENGTHEN FURTHER</div>
+                    <ul><li>Extend debt maturity profile</li><li>Secure additional credit facilities</li><li>Diversify funding sources</li></ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="conclusion">
+            <h2 class="conclusion-title">FINAL ASSESSMENT</h2>
+            <p style="text-align: center; font-size: 1.2rem; margin-bottom: 20px;">ABB's solvency and liquidity position is <span class="highlight">NOT JUST HEALTHY</span> - it's a <span class="highlight">SIGNIFICANT COMPETITIVE ADVANTAGE</span>.</p>
+            <div class="confidence-level">Confidence Level: 95% - <span class="highlight">STRONG BUY</span> based on financial health</div>
+            <div class="advantage-grid">
+                <div class="advantage-card"><div class="advantage-icon">🛡️</div><h3>Protection</h3><p>In economic downturns</p></div>
+                <div class="advantage-card"><div class="advantage-icon">🎯</div><h3>Flexibility</h3><p>For strategic moves</p></div>
+                <div class="advantage-card"><div class="advantage-icon">📈</div><h3>Confidence</h3><p>For investors & stakeholders</p></div>
+                <div class="advantage-card"><div class="advantage-icon">💪</div><h3>Leverage</h3><p>In negotiations</p></div>
+            </div>
+            <p style="text-align: center; margin-top: 25px; font-size: 1.1rem;">This is arguably ABB's <span class="highlight">strongest competitive differentiator</span> versus Danfoss and Siemens.</p>
+        </div>
+        
+        <footer><p>ABB Financial Health Dashboard | Data Period: 2021-2023 | Analysis Date: 2024</p></footer>
+    </div>
+
+    <script>
+        // Liquidity Chart
+        const liquidityCtx = document.getElementById('liquidityChart').getContext('2d');
+        new Chart(liquidityCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Current Ratio', 'Quick Ratio', 'Cash Ratio'],
+                datasets: [
+                    { label: 'ABB', data: [1.78, 1.00, 0.45], backgroundColor: '#005eb8' },
+                    { label: 'Danfoss', data: [1.42, 0.73, 0.35], backgroundColor: '#ffc107' },
+                    { label: 'Siemens', data: [1.35, 0.90, 0.40], backgroundColor: '#dc3545' },
+                    { label: 'Industry Avg', data: [1.50, 0.80, 0.30], backgroundColor: '#6c757d', type: 'line', fill: false, pointRadius: 5 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Liquidity Metrics Comparison' } } }
+        });
+        
+        // Solvency Chart
+        const solvencyCtx = document.getElementById('solvencyChart').getContext('2d');
+        new Chart(solvencyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Gearing Ratio', 'Debt-to-Equity', 'Interest Coverage'],
+                datasets: [
+                    { label: 'ABB', data: [0.24, 0.32, 15], backgroundColor: '#005eb8' },
+                    { label: 'Danfoss', data: [0.51, 0.67, 4], backgroundColor: '#ffc107' },
+                    { label: 'Siemens', data: [0.28, 0.39, 8], backgroundColor: '#dc3545' }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Solvency Metrics Comparison' } } }
+        });
+        
+        // Z-Score Chart
+        const zscoreCtx = document.getElementById('zscoreChart').getContext('2d');
+        new Chart(zscoreCtx, {
+            type: 'line',
+            data: {
+                labels: ['2021', '2022', '2023'],
+                datasets: [
+                    { label: 'ABB', data: [3.8, 4.1, 4.39], borderColor: '#005eb8', backgroundColor: 'rgba(0, 94, 184, 0.1)', borderWidth: 3, tension: 0.3, fill: true },
+                    { label: 'Danfoss', data: [2.4, 2.5, 2.51], borderColor: '#ffc107', backgroundColor: 'rgba(255, 193, 7, 0.1)', borderWidth: 2, tension: 0.3, fill: true },
+                    { label: 'Siemens', data: [2.3, 2.6, 2.51], borderColor: '#dc3545', backgroundColor: 'rgba(220, 53, 69, 0.1)', borderWidth: 2, tension: 0.3, fill: true },
+                    { label: 'Safe Zone (3.0)', data: [3.0, 3.0, 3.0], borderColor: '#28a745', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Altman Z-Score Trend (2021-2023)' } } }
+        });
+        
+        // Capital Access Chart
+        const capitalCtx = document.getElementById('capitalChart').getContext('2d');
+        new Chart(capitalCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Debt Capacity', 'Equity Capacity', 'Internal Generation'],
+                datasets: [{ data: [40, 30, 30], backgroundColor: ['#005eb8', '#ff8200', '#28a745'] }]
+            },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { title: { display: true, text: 'Capital Access Composition' } } }
+        });
+    </script>
+</body>
+</html>
